@@ -68,8 +68,6 @@ Change the type to **Gradle Project** and the language to **Kotlin**
 
 ![Project Settings](images/project-settings.png)
 
-Make sure you select Spring Boot **2.2.x** as GCP does not currently work with 2.3.x
-
 Add the following dependencies (use the search field):
 
 1. Rest Repositories
