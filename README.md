@@ -4,7 +4,7 @@ This demo shows a Cloud Run app written in Spring Boot connected to Cloud SQL vi
 
 It is designed for you to be able to code it "live" if you like to show the full developer workflow.
 
-**Note: You can just fork this repo and use this if you don't wanna do any coding**
+**Note:** You can just fork this repo and use this if you don't wanna do any coding
 
 ## Overview
 
@@ -18,9 +18,9 @@ This demo will take you through the following steps
 
 ### Assumptions
 
-This guide assumes you're using [JetBrains IntelliJ IDEA](https://www.jetbrains.com/idea/) - any IDE (or even CLI) is possible though! 
+This guide assumes you're using [JetBrains IntelliJ IDEA](https://www.jetbrains.com/idea/) - any IDE (or even CLI) is possible though!
 
-## Step 0. Pre-Requisites
+## Step 0. Pre-Requisites (do this before the demo!)
 
 ### Log in to GCP
 
@@ -31,11 +31,29 @@ gcloud auth login
 ```
 
 ### Enable APIs
+
 ```shell script
 GCP_PROJECT=<my-project>
 
-gcloud services enable run.googleapis.com cloudbuild.googleapis.com sql-component.googleapis.com sourcerepo.googleapis.com sqladmin.googleapis.com --project "$GCP_PROJECT"
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com sql-component.googleapis.com sourcerepo.googleapis.com sqladmin.googleapis.com --project "${GCP_PROJECT}"
 ```
+
+### Service Account Permissions
+
+Create a new service account for this workload and give it the Cloud SQL Client IAM Permission:
+
+```shell script
+gcloud iam service-accounts create cloud-run-demo \
+    --description="Cloud Run Demo Service Account" --project "${GCP_PROJECT}"
+
+gcloud projects add-iam-policy-binding "${GCP_PROJECT}" \
+    --member="serviceAccount:cloud-run-demo@${GCP_PROJECT}.iam.gserviceaccount.com" \
+    --role="roles/cloudsql.client"
+```
+
+### (Argolis only) Allow Public Cloud Run Access
+
+You need to remove the org policy `iam.allowedPolicyMemberDomain` which will then allow a public Cloud Run service.
 
 ### Cloud SQL Database
 
@@ -58,7 +76,7 @@ Import some dummy data to the database
 gcloud sql import sql "$DB_INSTANCE_NAME" gs://sb-cr-demo/demo.sql --project "$GCP_PROJECT" --quiet
 ```
 
-## Step 1. Creating IntelliJ Project and App
+## Step 1. Creating IntelliJ Project and App (Demo starts here)
 
 Create a new Project by clicking through **File** -> **New** -> **Project** and select **Spring Initializr**
 
@@ -89,6 +107,7 @@ implementation("org.springframework.cloud:spring-cloud-gcp-starter-sql-mysql")
 ```
 
 The whole section should look like this:
+
 ```kotlin
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
@@ -116,6 +135,7 @@ data class Customer(@Id @GeneratedValue val id: Long, val name: String, val addr
 ```
 
 Finally create a repo to store and address the data
+
 ```kotlin
 interface CustomerRepo : JpaRepository<Customer, Long> {
 }
@@ -146,6 +166,7 @@ data class Customer(@Id @GeneratedValue val id: Long, val name: String, val addr
 interface CustomerRepo : JpaRepository<Customer, Long> {
 }
 ```
+
 ## Step 4. Dockerfile
 
 Click **File** -> **New** -> **File** and call it `Dockerfile`
@@ -183,6 +204,8 @@ On github copy the instructions to push from an existing repo.
 
 ## Step 6. Cloud Run
 
+### Configuring
+
 In the cloud console navigate to Cloud Run in your project with the SQL database and click **Create Service**
 
 Pick a region and give your service a name, allowing unauthenticated requests.
@@ -216,6 +239,12 @@ On the **Connections** tab select your MySQL instance
 
 ![Cloud SQL Connection](images/cloud-sql-connection.png)
 
+On the **Security** tab select the service account you created earlier (`cloud-run-demo` by default)
+
+![Cloud SQL Connection](images/service-account.png)
+
+### Creating
+
 Now click **Create** and Cloud Build will build a container image and serve it for you.
 
 This takes a while - around 2-4 minutes - and is a good time to walk through the Cloud Build UI and talk about its features
@@ -241,7 +270,7 @@ Once it's up, navigate to its URL and add `/customers` to the end. You should ge
 }
 ```
 
-# Step 6. Improving Search
+## Step 6. Improving Search
 
 We can use Spring Boot to provide a simple search interface. Edit the repository interface to look like this:
 
